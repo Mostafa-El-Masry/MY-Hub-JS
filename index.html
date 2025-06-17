@@ -1,122 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Video Library</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#5D5CDE',
-                    }
-                }
-            }
-        }
-    </script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Library</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
-    <!-- Header -->
-    <header class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-video text-primary text-2xl"></i>
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">My Video Library</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            placeholder="Search videos..." 
-                            class="w-64 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary"
-                        >
-                        <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <button id="gridViewBtn" class="p-2 rounded-lg bg-primary text-white">
-                            <i class="fas fa-th-large"></i>
-                        </button>
-                        <button id="listViewBtn" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300">
-                            <i class="fas fa-list"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+<body>
+  <div class="container">
+    <header>
+      <h1>Video Library</h1>
+      <p id="video-count"></p>
+      <button id="toggle-view">Toggle View</button>
     </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Stats -->
-        <div class="mb-8">
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Video Library Stats</h2>
-                        <p class="text-gray-600 dark:text-gray-400 mt-1">Total videos: <span id="totalVideos" class="font-bold text-primary">0</span></p>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <div class="text-right">
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Showing</p>
-                            <p class="text-lg font-bold text-primary" id="visibleVideos">0</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <main>
+      <section class="player-section">
+        <div class="video-container">
+          <video id="video-player" controls poster="">
+            <source id="video-source" src="" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <div class="video-title" id="video-title"></div>
         </div>
+        <div class="video-info" id="video-info"></div>
+      </section>
 
-        <!-- Video Grid/List -->
-        <div id="videoContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <!-- Videos will be dynamically inserted here -->
-        </div>
+      <section class="controls">
+        <input type="text" id="search" placeholder="Search videos...">
+        <select id="filter">
+          <option value="all">All</option>
+          <option value="watched">Watched</option>
+          <option value="unwatched">Unwatched</option>
+          <option value="favorites">Favorites</option>
+        </select>
+      </section>
 
-        <!-- No Results Message -->
-        <div id="noResults" class="hidden text-center py-12">
-            <i class="fas fa-search text-4xl text-gray-400 mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No videos found</h3>
-            <p class="text-gray-500 dark:text-gray-400">Try adjusting your search terms</p>
-        </div>
+      <section class="video-list" id="video-list"></section>
+      <div id="videoContainer"></div>
     </main>
+  </div>
 
-    <!-- Video Player Modal -->
-    <div id="videoModal" class="fixed inset-0 z-50 hidden modal-backdrop bg-black bg-opacity-75 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 id="modalTitle" class="text-xl font-semibold text-gray-900 dark:text-white truncate mr-4"></h3>
-                <button id="closeModal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="p-4">
-                <video 
-                    id="modalVideo" 
-                    class="w-full rounded-lg shadow-lg" 
-                    controls 
-                    controlsList="nodownload"
-                    preload="metadata"
-                >
-                    Your browser does not support the video tag.
-                </video>
-                <div class="mt-4">
-                    <p id="modalDescription" class="text-gray-700 dark:text-gray-300"></p>
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        <span class="inline-block bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full text-sm" id="modalDuration"></span>
-                        <span class="inline-block bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full text-sm" id="modalSize"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Your video array - Replace this with your actual video data
-        
-    </script>
+  <script src="script.js"></script>
 </body>
 </html>
