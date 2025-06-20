@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Library</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="pornstyles.css" />
+  </head>
+  <body>
+    <div>
+      <nav>
+        <a href="index.html" onclick="showPage('index')">Calendar</a>
+        <a href="pornindex.html" onclick="showPage('pornindex')">PVL</a>
+      </nav>
+    </div>
+
+    <div class="container">
+      <header>
+        <h1>Video Library</h1>
+        <p id="video-count"></p>
+        <button id="toggle-view">Toggle View</button>
+      </header>
+
+      <main>
+        <section class="player-section">
+          <div class="video-container">
+            <video id="video-player" controls poster="">
+              <source id="video-source" src="" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            <div class="video-title" id="video-title"></div>
+          </div>
+          <div class="video-info" id="video-info"></div>
+        </section>
+
+        <section class="controls">
+          <input type="text" id="search" placeholder="Search videos..." />
+          <select id="filter">
+            <option value="all">All</option>
+            <option value="watched">Watched</option>
+            <option value="unwatched">Unwatched</option>
+            <option value="favorites">Favorites</option>
+          </select>
+        </section>
+
+        <section class="video-list" id="video-list"></section>
+        <div id="videoContainer"></div>
+      </main>
+    </div>
+
+    <script src="pornscript.js"></script>
+  </body>
+</html>

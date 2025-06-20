@@ -192,6 +192,14 @@ const VIDEO_TITLES = [
 `stepMomsTeachSex - Stepmom & Stepson Share Bed & Fuck S7_E3`,
 ];
 
+function showPage(pageId) {
+        const pages = document.querySelectorAll('.page');
+        pages.forEach(page => {
+            page.classList.remove('active');
+        });
+        document.getElementById(pageId).classList.add('active');
+    }
+    
 const videos = VIDEO_TITLES.map((title, index) => ({
   id: `video-${index + 1}`,
   title,
