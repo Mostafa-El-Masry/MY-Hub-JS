@@ -274,7 +274,9 @@ function renderVideoList() {
       (filter === 'unwatched' && !video.watched) ||
       (filter === 'favorites' && video.favorite);
 
-    return matchesSearch && matchesFilter;
+    // Exclude the currently playing video from the list
+    const notPlaying = !currentVideo || video.id !== currentVideo.id;
+    return matchesSearch && matchesFilter && notPlaying;
   });
 
   // Sorting logic
@@ -310,9 +312,10 @@ function renderVideoList() {
 
   videoList.innerHTML = filtered.map(video => {
     const views = localStorage.getItem(`video-views-${video.title}`) || 0;
+    const thumb = `videos/thumb/${video.title}_thumb_001.jpg`;
     return `
       <div class="video-card" onclick="selectVideo('${video.id}')">
-        <img src="${video.thumbnail}" alt="${video.title}" onerror="this.onerror=null;this.src='https://via.placeholder.com/320x180?text=No+Thumbnail';" />
+        <img src="${thumb}" alt="${video.title}" onerror="this.onerror=null;this.src='https://via.placeholder.com/320x180?text=No+Thumbnail';" />
         <div class="info">
           <h4>${video.title}</h4>
           <p>${video.duration}</p>
