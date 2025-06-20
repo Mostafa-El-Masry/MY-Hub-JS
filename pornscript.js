@@ -324,6 +324,16 @@ function incrementViewCount(title) {
 
 // Track if current video has passed 10s for view counting
 let viewCountedForThisPlay = false;
+let hasStartedPlaying = false;
+
+// Only start counting after the user actually plays the video
+videoPlayer.addEventListener('play', function() {
+  hasStartedPlaying = true;
+});
+
+videoPlayer.addEventListener('pause', function() {
+  hasStartedPlaying = false;
+});
 
 videoPlayer.addEventListener('timeupdate', function() {
   if (currentVideo && videoPlayer.currentTime > 0) {
@@ -333,23 +343,24 @@ videoPlayer.addEventListener('timeupdate', function() {
     );
   }
 
-  // Count as a view only if played past 10 seconds and not already counted this play
+  // Count as a view only if played past 10 seconds, not already counted, and user has played the video
   if (
     currentVideo &&
+    hasStartedPlaying &&
     !viewCountedForThisPlay &&
     videoPlayer.currentTime >= 10
   ) {
     incrementViewCount(currentVideo.title);
     viewCountedForThisPlay = true;
     renderVideoList();
-    // Optionally update the info panel immediately
     updateVideoInfo();
   }
 });
 
-// Reset viewCountedForThisPlay when a new video is loaded
+// Reset viewCountedForThisPlay and hasStartedPlaying when a new video is loaded
 videoPlayer.addEventListener('loadeddata', function() {
   viewCountedForThisPlay = false;
+  hasStartedPlaying = false;
 });
 
 // Update video info panel with correct view count
@@ -361,11 +372,67 @@ function updateVideoInfo() {
   `;
 }
 
-// On page load, play the top video in the current sorting type
+// Helper to get sorted and filtered videos (reuse your filtering/sorting logic)
+function getSortedFilteredVideos() {
+  const searchTerm = searchInput.value.toLowerCase();
+  const filter = filterSelect.value;
+  const sort = sortSelect.value;
+
+  let filtered = videos.filter(video => {
+    const matchesSearch = video.title.toLowerCase().includes(searchTerm);
+    const matchesFilter =
+      filter === 'all' ||
+      (filter === 'watched' && video.watched) ||
+      (filter === 'unwatched' && !video.watched);
+
+    // Exclude the currently playing video from the list
+    const notPlaying = !currentVideo || video.id !== currentVideo.id;
+    return matchesSearch && matchesFilter && notPlaying;
+  });
+
+  if (sort === 'random') {
+    filtered = filtered.slice().sort(() => Math.random() - 0.5);
+  } else if (sort === 'recent') {
+    filtered = filtered.slice().sort((a, b) => {
+      if (!a.lastWatched) return 1;
+      if (!b.lastWatched) return -1;
+      return new Date(b.lastWatched) - new Date(a.lastWatched);
+    });
+  } else if (sort === 'mostviewed') {
+    filtered = filtered.slice().sort((a, b) => {
+      const aViews = getViewCount(a.title);
+      const bViews = getViewCount(b.title);
+      return bViews - aViews;
+    });
+  } else {
+    filtered = filtered.slice().sort((a, b) => a.title.localeCompare(b.title));
+  }
+  return filtered;
+}
+
+// On page load, load (but do not play) the top video in the current sorting type
 window.addEventListener('DOMContentLoaded', function() {
   const filtered = getSortedFilteredVideos();
   if (filtered.length > 0) {
-    window.selectVideo(filtered[0].id);
+    // Load the video but do not play it
+    const vid = filtered[0];
+    currentVideo = vid;
+    videoSource.src = vid.src;
+    videoPlayer.poster = vid.thumbnail;
+    videoPlayer.load();
+    videoTitle.textContent = vid.title;
+    updateVideoInfo();
+
+    // Restore last position and volume if available
+    videoPlayer.onloadedmetadata = function() {
+      const savedTime = localStorage.getItem(`video-pos-${vid.title}`);
+      if (savedTime) {
+        videoPlayer.currentTime = parseFloat(savedTime);
+      }
+      const savedVol = localStorage.getItem(`video-vol-${vid.title}`);
+      videoPlayer.volume = savedVol !== null ? parseFloat(savedVol) : 0.03;
+      videoPlayer.onloadedmetadata = null;
+    };
   } else {
     videoSource.src = '';
     videoPlayer.poster = '';
@@ -374,32 +441,30 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// When sorting changes, play the top video in the new sorting
+// When sorting changes, load (but do not play) the top video in the new sorting
 sortSelect.addEventListener('change', () => {
   localStorage.setItem('video-sort', sortSelect.value);
   renderVideoList();
   const filtered = getSortedFilteredVideos();
   if (filtered.length > 0) {
-    window.selectVideo(filtered[0].id);
-  }
-});
+    // Load the video but do not play it
+    const vid = filtered[0];
+    currentVideo = vid;
+    videoSource.src = vid.src;
+    videoPlayer.poster = vid.thumbnail;
+    videoPlayer.load();
+    videoTitle.textContent = vid.title;
+    updateVideoInfo();
 
-// Save playback position and volume to localStorage
-videoPlayer.addEventListener('timeupdate', function() {
-  if (currentVideo && videoPlayer.currentTime > 0) {
-    localStorage.setItem(
-      `video-pos-${currentVideo.title}`,
-      videoPlayer.currentTime
-    );
-  }
-});
-
-videoPlayer.addEventListener('volumechange', function() {
-  if (currentVideo) {
-    localStorage.setItem(
-      `video-vol-${currentVideo.title}`,
-      videoPlayer.volume
-    );
+    videoPlayer.onloadedmetadata = function() {
+      const savedTime = localStorage.getItem(`video-pos-${vid.title}`);
+      if (savedTime) {
+        videoPlayer.currentTime = parseFloat(savedTime);
+      }
+      const savedVol = localStorage.getItem(`video-vol-${vid.title}`);
+      videoPlayer.volume = savedVol !== null ? parseFloat(savedVol) : 0.03;
+      videoPlayer.onloadedmetadata = null;
+    };
   }
 });
 
