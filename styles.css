@@ -1,18 +1,407 @@
+/* =========================
+   ROOT VARIABLES
+   ========================= */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.2);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --primary-color: #4a6bff;
+  --text-color: #2d3748;
+  --color-text-success: var(--color-success-100);
+}
+
+/* =========================
+   BASE STYLES
+   ========================= */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+  color: var(--text-color);
+}
+
+/* =========================
+   GLASSY NAVIGATION BAR
+   ========================= */
 nav {
-            background-color: #333;
-            color: white;
-            padding: 1em;
-            text-align: center;
-        }
-        nav a {
-            color: white;
-            margin: 0 15px;
-            text-decoration: none;
-        }
-        .page {
-            display: none;
-            padding: 20px;
-        }
-        .active {
-            display: block;
-        }
+  background: rgba(31, 41, 55, 0.5); /* matches calendar glassy background */
+  color: #fff;
+  padding: 1em 0.5em;
+  text-align: center;
+  border-radius: 1em 1em 0 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+nav a {
+  color: #fff;
+  margin: 0 18px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1.1em;
+  padding: 0.4em 1em;
+  border-radius: 0.5em;
+  transition: background 0.2s, color 0.2s;
+}
+
+nav a:hover,
+nav a.active {
+  background: rgba(74, 144, 226, 0.7);
+  color: #fff;
+  text-decoration: none;
+}
+
+/* =========================
+   PAGE VISIBILITY
+   ========================= */
+.page {
+  display: none;
+  padding: 20px;
+}
+
+.active {
+  display: block;
+}
+
+/* =========================
+   VIDEO LIBRARY STYLES
+   ========================= */
+
+/* Container for the video library */
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* Header styles for video library */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 2rem;
+  background: linear-gradient(to right, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Video player container */
+.video-container {
+  position: relative;
+  background: black;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+video {
+  width: 100%;
+  aspect-ratio: 16/9;
+}
+
+.video-title {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+/* Controls for search, filter, etc. */
+.controls {
+  display: flex;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.controls input,
+.controls select {
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+}
+
+/* Video list grid */
+.video-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+/* Video card styles */
+.video-card {
+  background: rgba(55, 65, 81, 0.3);
+  border-radius: 1rem;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.video-card:hover {
+  transform: scale(1.05);
+}
+
+.video-card img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+}
+
+.video-card .info {
+  padding: 0.5rem;
+}
+
+/* Video info panel under the player */
+.video-info {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(31, 41, 55, 0.5);
+  border-radius: 1rem;
+}
+
+/* Sort dropdown */
+#sort {
+  margin-left: 10px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #888;
+  background: #222;
+  color: #fff;
+  font-size: 1em;
+}
+
+#sort:focus {
+  outline: 2px solid #4a90e2;
+}
+
+/* =========================
+   GLASSY CALENDAR & CONTAINER
+   ========================= */
+.calendar-container {
+  max-width: 90vw;
+  margin: 2rem auto;
+  text-align: center;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: var(--glass-shadow);
+  border: 1px solid var(--glass-border);
+}
+
+/* =========================
+   CALENDAR HEADER
+   ========================= */
+h1 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  text-align: center;
+  margin: 0 0 2rem 0;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--glass-border);
+}
+
+/* =========================
+   CALENDAR GRID
+   ========================= */
+.calendar {
+  display: grid;
+  grid-template-columns: 80px repeat(7, 1fr);
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin: 1rem auto;
+  max-width: 75vw;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+}
+
+.day-header {
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 0.75rem;
+  color: var(--primary-color);
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--glass-border);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+.time-cell {
+  font-weight: 600;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 0.5rem;
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--glass-border);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slot {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  min-height: 80px;
+  transition: all 0.3s ease;
+  border: 1px solid var(--glass-border);
+  position: relative;
+}
+
+.slot:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* =========================
+   CALENDAR EVENTS
+   ========================= */
+.event {
+  position: absolute;
+  width: 90%;
+  left: 2%;
+  top: 5px;
+  padding: 10px 6px;
+  border-radius: 8px;
+  color: rgb(255, 255, 255);
+  font-size: 1rem;
+  text-transform: capitalize;
+  font-weight: bold;
+  cursor: move;
+  z-index: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.event:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.event-text {
+  flex-grow: 1;
+  cursor: text;
+  word-break: break-word;
+}
+
+.event-btn-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.toggle-btn, .delete-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover, .delete-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* =========================
+   CALENDAR NAVIGATION ARROWS
+   ========================= */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.arrow {
+  cursor: pointer;
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--glass-border);
+}
+
+.arrow:hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+/* =========================
+   RESPONSIVE CALENDAR
+   ========================= */
+@media (max-width: 768px) {
+  .calendar {
+    grid-template-columns: 60px repeat(7, 1fr);
+    font-size: 0.8rem;
+  }
+  
+  .time-cell, .day-header {
+    padding: 0.5rem 0.25rem;
+  }
+}
+
+/* =========================
+   CALENDAR NAV BUTTONS
+   ========================= */
+.nav-btn {
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 0.75rem 1.5rem;
+  color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  cursor: pointer;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+  box-shadow: var(--glass-shadow);
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
