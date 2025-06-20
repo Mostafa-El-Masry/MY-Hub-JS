@@ -205,7 +205,7 @@ const videos = VIDEO_TITLES.map((title, index) => ({
   title,
   duration: `${Math.floor(Math.random() * 10) + 1}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`,
   src: `videos/${title}.mp4`, // Use local videos folder
-  thumbnail: `videos/${title}.jpg`, // Try to use a jpg thumbnail with the same name (optional)
+  thumbnail: `videos/${title}_thumb_0.jpg`, // Use the _thumb_0.jpg as the thumbnail
   watched: Math.random() > 0.7,
   favorite: Math.random() > 0.8,
   lastWatched: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : undefined,
@@ -222,7 +222,6 @@ const videoList = document.getElementById('video-list');
 const videoCount = document.getElementById('video-count');
 const searchInput = document.getElementById('search');
 const filterSelect = document.getElementById('filter');
-const toggleViewBtn = document.getElementById('toggle-view');
 
 let viewMode = 'grid';
 
@@ -231,11 +230,43 @@ function formatDate(dateStr) {
   return date.toLocaleDateString();
 }
 
+// Add a sort select element (call this after DOMContentLoaded or add to your HTML)
+const sortSelect = document.createElement('select');
+sortSelect.id = 'sort';
+sortSelect.innerHTML = `
+  <option value="alpha">Alphabetical</option>
+  <option value="duration">Duration</option>
+  <option value="random">Random</option>
+  <option value="recent">Recently Watched</option>
+  <option value="favorite">Favorites First</option>
+  <option value="mostviewed">Most Viewed</option>
+`;
+
+// Restore last sort from localStorage or default to 'alpha'
+const lastSort = localStorage.getItem('video-sort') || 'alpha';
+sortSelect.value = lastSort;
+
+videoCount.parentNode.insertBefore(sortSelect, videoCount.nextSibling);
+
+sortSelect.addEventListener('change', () => {
+  localStorage.setItem('video-sort', sortSelect.value);
+  renderVideoList();
+});
+
+// Save and update view count (time video was viewed) in localStorage
+function incrementViewCount(title) {
+  const key = `video-views-${title}`;
+  let count = parseInt(localStorage.getItem(key) || '0', 10);
+  count += 1;
+  localStorage.setItem(key, count);
+}
+
 function renderVideoList() {
   const searchTerm = searchInput.value.toLowerCase();
   const filter = filterSelect.value;
+  const sort = sortSelect.value;
 
-  const filtered = videos.filter(video => {
+  let filtered = videos.filter(video => {
     const matchesSearch = video.title.toLowerCase().includes(searchTerm);
     const matchesFilter =
       filter === 'all' ||
@@ -246,21 +277,173 @@ function renderVideoList() {
     return matchesSearch && matchesFilter;
   });
 
-  videoList.innerHTML = filtered.map(video => `
-    <div class="video-card" onclick="selectVideo('${video.id}')">
-      <img src="${video.thumbnail}" alt="${video.title}" onerror="this.onerror=null;this.src='https://via.placeholder.com/320x180?text=No+Thumbnail';" />
-      <div class="info">
-        <h4>${video.title}</h4>
-        <p>${video.duration}</p>
-        ${video.watched ? '<span>✅ Watched</span>' : ''}
-        ${video.favorite ? '<span>⭐</span>' : ''}
+  // Sorting logic
+  if (sort === 'duration') {
+    filtered = filtered.slice().sort((a, b) => {
+      // Parse mm:ss to seconds
+      const toSec = d => {
+        const [m, s] = d.duration.split(':').map(Number);
+        return m * 60 + s;
+      };
+      return toSec(a) - toSec(b);
+    });
+  } else if (sort === 'random') {
+    filtered = filtered.slice().sort(() => Math.random() - 0.5);
+  } else if (sort === 'recent') {
+    filtered = filtered.slice().sort((a, b) => {
+      if (!a.lastWatched) return 1;
+      if (!b.lastWatched) return -1;
+      return new Date(b.lastWatched) - new Date(a.lastWatched);
+    });
+  } else if (sort === 'favorite') {
+    filtered = filtered.slice().sort((a, b) => (b.favorite === a.favorite) ? 0 : b.favorite ? 1 : -1);
+  } else if (sort === 'mostviewed') {
+    filtered = filtered.slice().sort((a, b) => {
+      const aViews = parseInt(localStorage.getItem(`video-views-${a.title}`) || '0', 10);
+      const bViews = parseInt(localStorage.getItem(`video-views-${b.title}`) || '0', 10);
+      return bViews - aViews;
+    });
+  } else {
+    // Alphabetical (default)
+    filtered = filtered.slice().sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  videoList.innerHTML = filtered.map(video => {
+    const views = localStorage.getItem(`video-views-${video.title}`) || 0;
+    return `
+      <div class="video-card" onclick="selectVideo('${video.id}')">
+        <img src="${video.thumbnail}" alt="${video.title}" onerror="this.onerror=null;this.src='https://via.placeholder.com/320x180?text=No+Thumbnail';" />
+        <div class="info">
+          <h4>${video.title}</h4>
+          <p>${video.duration}</p>
+          <p>Views: ${views}</p>
+          ${video.watched ? '<span>✅ Watched</span>' : ''}
+          ${video.favorite ? '<span>⭐</span>' : ''}
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   videoCount.textContent = `${filtered.length} videos in your collection`;
 }
 
+// Helper to get sorted & filtered videos based on current controls
+function getSortedFilteredVideos() {
+  const searchTerm = searchInput.value.toLowerCase();
+  const filter = filterSelect.value;
+  const sort = sortSelect.value;
+
+  let filtered = videos.filter(video => {
+    const matchesSearch = video.title.toLowerCase().includes(searchTerm);
+    const matchesFilter =
+      filter === 'all' ||
+      (filter === 'watched' && video.watched) ||
+      (filter === 'unwatched' && !video.watched) ||
+      (filter === 'favorites' && video.favorite);
+
+    return matchesSearch && matchesFilter;
+  });
+
+  // Sorting logic
+  if (sort === 'duration') {
+    filtered = filtered.slice().sort((a, b) => {
+      const toSec = d => {
+        const [m, s] = d.duration.split(':').map(Number);
+        return m * 60 + s;
+      };
+      return toSec(a) - toSec(b);
+    });
+  } else if (sort === 'random') {
+    filtered = filtered.slice().sort(() => Math.random() - 0.5);
+  } else if (sort === 'recent') {
+    filtered = filtered.slice().sort((a, b) => {
+      if (!a.lastWatched) return 1;
+      if (!b.lastWatched) return -1;
+      return new Date(b.lastWatched) - new Date(a.lastWatched);
+    });
+  } else if (sort === 'favorite') {
+    filtered = filtered.slice().sort((a, b) => (b.favorite === a.favorite) ? 0 : b.favorite ? 1 : -1);
+  } else if (sort === 'mostviewed') {
+    filtered = filtered.slice().sort((a, b) => {
+      const aViews = parseInt(localStorage.getItem(`video-views-${a.title}`) || '0', 10);
+      const bViews = parseInt(localStorage.getItem(`video-views-${b.title}`) || '0', 10);
+      return bViews - aViews;
+    });
+  } else {
+    // Alphabetical (default)
+    filtered = filtered.slice().sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  return filtered;
+}
+
+// On page load, play the top video in the current sorting type
+window.addEventListener('DOMContentLoaded', function() {
+  const filtered = getSortedFilteredVideos();
+  if (filtered.length > 0) {
+    window.selectVideo(filtered[0].id);
+  } else {
+    videoSource.src = '';
+    videoPlayer.poster = '';
+    videoTitle.textContent = '';
+    videoInfo.innerHTML = '';
+  }
+});
+
+// When sorting changes, play the top video in the new sorting
+sortSelect.addEventListener('change', () => {
+  localStorage.setItem('video-sort', sortSelect.value);
+  renderVideoList();
+  const filtered = getSortedFilteredVideos();
+  if (filtered.length > 0) {
+    window.selectVideo(filtered[0].id);
+  }
+});
+
+// Save playback position and volume to localStorage
+videoPlayer.addEventListener('timeupdate', function() {
+  if (currentVideo && videoPlayer.currentTime > 0) {
+    localStorage.setItem(
+      `video-pos-${currentVideo.title}`,
+      videoPlayer.currentTime
+    );
+  }
+
+  // Count as a view only if played past 10 seconds and not already counted this play
+  if (
+    currentVideo &&
+    !viewCountedForThisPlay &&
+    videoPlayer.currentTime >= 10
+  ) {
+    incrementViewCount(currentVideo.title);
+    viewCountedForThisPlay = true;
+    // Optionally update the view count display immediately
+    renderVideoList();
+    videoInfo.innerHTML = `
+      <h3>${currentVideo.title}</h3>
+      <p>Duration: ${currentVideo.duration}</p>
+      ${currentVideo.lastWatched ? `<p>Last Watched: ${formatDate(currentVideo.lastWatched)}</p>` : ''}
+      ${currentVideo.favorite ? '<p>⭐ Favorite</p>' : ''}
+      <p>Views: ${localStorage.getItem(`video-views-${currentVideo.title}`) || 0}</p>
+    `;
+  }
+});
+
+// Reset viewCountedForThisPlay when a new video is loaded
+videoPlayer.addEventListener('loadeddata', function() {
+  viewCountedForThisPlay = false;
+});
+
+videoPlayer.addEventListener('volumechange', function() {
+  if (currentVideo) {
+    localStorage.setItem(
+      `video-vol-${currentVideo.title}`,
+      videoPlayer.volume
+    );
+  }
+});
+
+// When a video is selected, save its id as the last played
 window.selectVideo = function(id) {
   currentVideo = videos.find(v => v.id === id);
   videoSource.src = currentVideo.src;
@@ -272,37 +455,109 @@ window.selectVideo = function(id) {
     <p>Duration: ${currentVideo.duration}</p>
     ${currentVideo.lastWatched ? `<p>Last Watched: ${formatDate(currentVideo.lastWatched)}</p>` : ''}
     ${currentVideo.favorite ? '<p>⭐ Favorite</p>' : ''}
+    <p>Views: ${localStorage.getItem(`video-views-${currentVideo.title}`) || 0}</p>
   `;
-  videoPlayer.play(); // Auto play after
+
+  // Save last played video id
+  localStorage.setItem('last-video-id', id);
+
+  // Increment view count
+  incrementViewCount(currentVideo.title);
+
+  videoPlayer.onloadedmetadata = function() {
+    // Restore position
+    const savedTime = localStorage.getItem(`video-pos-${currentVideo.title}`);
+    if (savedTime) {
+      videoPlayer.currentTime = parseFloat(savedTime);
+    }
+    // Restore volume
+    const savedVol = localStorage.getItem(`video-vol-${currentVideo.title}`);
+    videoPlayer.volume = savedVol !== null ? parseFloat(savedVol) : 0.03;
+    videoPlayer.play();
+    videoPlayer.onloadedmetadata = null; // Clean up
+  };
+
+  videoPlayer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // Display a random thumbnail from the thumbs folder for the current video
+  function showRandomThumbnailForCurrentVideo() {
+    // Let's assume you have up to 20 thumbnails per video (adjust as needed)
+    const MAX_THUMBS = 20;
+    // Try to find which thumbnails exist
+    let availableThumbs = [];
+    for (let i = 0; i < MAX_THUMBS; i++) {
+      const thumbPath = `videos/thumb/${currentVideo.title}_thumb_${i}.jpg`;
+      availableThumbs.push(thumbPath);
+    }
+    // Pick a random index
+    const randomIndex = Math.floor(Math.random() * availableThumbs.length);
+    const randomThumb = availableThumbs[randomIndex];
+
+    // Create or reuse the preview element
+    let preview = document.getElementById('random-thumb-preview');
+    if (!preview) {
+      preview = document.createElement('img');
+      preview.id = 'random-thumb-preview';
+      preview.style.width = '160px';
+      preview.style.height = '90px';
+      preview.style.border = '2px solid #fff';
+      preview.style.borderRadius = '8px';
+      preview.style.background = '#222';
+      preview.style.display = 'block';
+      preview.style.margin = '10px auto';
+      document.body.appendChild(preview);
+    }
+    preview.src = randomThumb;
+    preview.style.display = 'block';
+  }
+
+  // Example usage: call this function after selecting a video
+  showRandomThumbnailForCurrentVideo();
 };
+
+// On page load, if a last played video exists, continue that video
+window.addEventListener('DOMContentLoaded', function() {
+  const lastId = localStorage.getItem('last-video-id');
+  if (lastId && videos.some(v => v.id === lastId)) {
+    window.selectVideo(lastId);
+  } else {
+    videoSource.src = '';
+    videoPlayer.poster = '';
+    videoTitle.textContent = '';
+    videoInfo.innerHTML = '';
+  }
+});
 
 searchInput.addEventListener('input', renderVideoList);
 filterSelect.addEventListener('change', renderVideoList);
-toggleViewBtn.addEventListener('click', () => {
-  viewMode = viewMode === 'grid' ? 'list' : 'grid';
-  videoList.className = `video-list ${viewMode}`;
-});
 
-// Create a thumbnail preview element
-const preview = document.createElement('img');
-preview.style.position = 'absolute';
-preview.style.display = 'none';
-preview.style.pointerEvents = 'none';
-preview.style.width = '160px';
-preview.style.height = '90px';
-preview.style.border = '2px solid #fff';
-preview.style.borderRadius = '8px';
-preview.style.background = '#222';
-preview.style.zIndex = 10;
-document.body.appendChild(preview);
+// Update: Use thumbs from videos/thumb/ and show on timeline hover
+// Show the thumbnail closest to the hovered time (rounded down to nearest minute or interval)
 
-const videoRect = () => videoPlayer.getBoundingClientRect();
+let preview = document.getElementById('timeline-thumb-preview');
+if (!preview) {
+  preview = document.createElement('img');
+  preview.id = 'timeline-thumb-preview';
+  preview.style.position = 'absolute';
+  preview.style.display = 'none';
+  preview.style.pointerEvents = 'none';
+  preview.style.width = '160px';
+  preview.style.height = '90px';
+  preview.style.border = '2px solid #fff';
+  preview.style.borderRadius = '8px';
+  preview.style.background = '#222';
+  preview.style.zIndex = 1000;
+  document.body.appendChild(preview);
+}
+
+// Set your thumbnail interval here (in seconds)
+const THUMB_INTERVAL = 60; // 60 for 1 minute, 5 for every 5 seconds, etc.
 
 videoPlayer.addEventListener('mousemove', function(e) {
-  // Only show preview if hovering over the controls/timeline area
-  const rect = videoRect();
+  const rect = videoPlayer.getBoundingClientRect();
   const y = e.clientY - rect.top;
-  if (y < rect.height - 40) { // Adjust 40px for control bar height
+  // Only show preview if hovering over the bottom 40px (timeline area)
+  if (y < rect.height - 40) {
     preview.style.display = 'none';
     return;
   }
@@ -312,12 +567,13 @@ videoPlayer.addEventListener('mousemove', function(e) {
   const percent = Math.min(Math.max(x / rect.width, 0), 1);
   const time = Math.floor(percent * videoPlayer.duration);
 
-  // Thumbnail naming convention: videos/{title}-{time}.jpg
-  const thumbSrc = `videos/${currentVideo.title}-${Math.floor(time / 5) * 5}.jpg`; // every 5 seconds
+  // Find the closest thumbnail index (rounded down to nearest interval)
+  const thumbIndex = Math.floor(time / THUMB_INTERVAL);
+  const thumbSrc = `videos/thumb/${currentVideo.title}_thumb_${thumbIndex}.jpg`;
 
   preview.src = thumbSrc;
-  preview.style.left = `${e.pageX - 80}px`; // Center the preview
-  preview.style.top = `${rect.top - 100}px`; // Above the player
+  preview.style.left = `${e.pageX - 80}px`; // Center the preview horizontally
+  preview.style.top = `${rect.top - 100}px`; // Show above the player
   preview.style.display = 'block';
 });
 
